@@ -101,7 +101,7 @@ float ReefwingLPS22HB::readPressure(Units units) {
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
   uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
   
-  long val = ( ((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL ) / 4096.0f;
+  long val = (long)(((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL) / 4096.0f;
   
   switch (units) {
     case Units::HECTOPASCAL:
