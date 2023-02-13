@@ -58,9 +58,9 @@ public:
   bool connected();
 
   uint8_t whoAmI();
-  void setODR(int rate);
+  void setODR(Rate rate);
   float readTemperature();
-  float readPressure(int units = HECTOPASCAL);
+  float readPressure(Units units = Units::HECTOPASCAL);
   uint32_t readPressureRAW();
 
 private:

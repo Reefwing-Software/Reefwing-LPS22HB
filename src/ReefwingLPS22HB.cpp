@@ -55,8 +55,8 @@
  ******************************************************************/
 
 ReefwingLPS22HB::ReefwingLPS22HB() : 
-  _address(LPS22HB_ADDRESS)
-  _rate(RATE_ONE_SHOT) { }
+  _address(LPS22HB_ADDRESS),
+  _rate((int)Rate::RATE_ONE_SHOT) { }
 
 void ReefwingLPS22HB::begin() {
   Wire1.begin();
@@ -80,8 +80,8 @@ bool ReefwingLPS22HB::connected() {
   return (whoAmI() == LPS22HB_WHO_AM_I_VALUE);
 }
 
-void ReefwingLPS22HB::setODR(int rate) {
-  _rate = rate;
+void ReefwingLPS22HB::setODR(Rate rate) {
+  _rate = (int)rate;
   write(LPS22HB_CTRL_REG1, (_rate & 0x07) << 4);
 }
 
@@ -94,7 +94,7 @@ void ReefwingLPS22HB::triggerOneShot() {
   }
 }
 
-float ReefwingLPS22HB::readPressure(int units) {
+float ReefwingLPS22HB::readPressure(Units units) {
   if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
   
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
