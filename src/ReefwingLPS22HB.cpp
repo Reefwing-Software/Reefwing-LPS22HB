@@ -95,7 +95,7 @@ void ReefwingLPS22HB::triggerOneShot() {
 }
 
 float ReefwingLPS22HB::readPressure(Units units) {
-  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
+  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
   
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
@@ -120,7 +120,7 @@ float ReefwingLPS22HB::readPressure(Units units) {
 }
 
 uint32_t ReefwingLPS22HB::readPressureRAW() {
-  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
+  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
   
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
@@ -133,7 +133,7 @@ uint32_t ReefwingLPS22HB::readPressureRAW() {
 }
 
 float ReefwingLPS22HB::readTemperature() {
-  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
+  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
 
   uint8_t tempOutL = read(LPS22HB_TEMP_OUT_L);
   uint8_t tempOutH = read(LPS22HB_TEMP_OUT_H);
