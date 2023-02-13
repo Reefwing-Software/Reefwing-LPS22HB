@@ -23,6 +23,28 @@
 
 /******************************************************************
  *
+ * ENUM Class Definitions - 
+ * 
+ ******************************************************************/
+
+enum class Rate {
+  RATE_ONE_SHOT = 0,
+  RATE_1_HZ,
+  RATE_10_HZ,
+  RATE_25_HZ,
+  RATE_50_HZ,
+  RATE_75_HZ,
+};
+
+enum class Units {
+  HECTOPASCAL = 0,
+  PSI,
+  MILLIBAR,
+  KILOPASCAL
+};
+
+/******************************************************************
+ *
  * LPS22HB Class Definition - 
  * 
  ******************************************************************/
@@ -36,17 +58,17 @@ public:
   bool connected();
 
   uint8_t whoAmI();
+  void setODR(int rate);
   float readTemperature();
-
-  float readPressure();
-  uint32_t readPressureUI();
+  float readPressure(int units = HECTOPASCAL);
   uint32_t readPressureRAW();
 
 private:
+  uint8_t _rate;
   uint8_t _address;
   uint8_t read(uint8_t reg);
   void write(uint8_t reg, uint8_t data);
-  uint8_t status(uint8_t status_bit);
+  void triggerOneShot();
 };
 
 #endif

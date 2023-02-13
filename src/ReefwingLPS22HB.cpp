@@ -50,24 +50,15 @@
 
 /******************************************************************
  *
- * Helper Defines - 
- * 
- ******************************************************************/
-
-#define NO_DATA_F     1.23
-#define NO_DATA_UI    123
-#define NO_DATA_T     456.0
-
-/******************************************************************
- *
  * LPS22HB Implementation - 
  * 
  ******************************************************************/
 
-ReefwingLPS22HB::ReefwingLPS22HB() { }
+ReefwingLPS22HB::ReefwingLPS22HB() : 
+  _address(LPS22HB_ADDRESS)
+  _rate(RATE_ONE_SHOT) { }
 
 void ReefwingLPS22HB::begin() {
-  _address = LPS22HB_ADDRESS;
   Wire1.begin();
   write(LPS22HB_RES_CONF, 0x00);    // resolution: temp=32, pressure=128
   write(LPS22HB_CTRL_REG1, 0x00);   // one-shot mode
@@ -89,80 +80,66 @@ bool ReefwingLPS22HB::connected() {
   return (whoAmI() == LPS22HB_WHO_AM_I_VALUE);
 }
 
-float ReefwingLPS22HB::readPressure() {
+void ReefwingLPS22HB::setODR(int rate) {
+  _rate = rate;
+  write(LPS22HB_CTRL_REG1, (_rate & 0x07) << 4);
+}
+
+void ReefwingLPS22HB::triggerOneShot() {
   write(LPS22HB_CTRL_REG2, 0x01);
 
-  if (status(0x01) < 0)
-    return NO_DATA_F;
-  
-  uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
-  uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
-  uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
+  // wait for ONE_SHOT bit to clear
+  while ((read(LPS22HB_CTRL_REG2) & 0x01) != 0) {
+    yield();
+  }
+}
 
-  long val = ( ((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL );
+float ReefwingLPS22HB::readPressure(int units) {
+  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
   
-  return val/4096.0f;
+  uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
+  uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
+  uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
+  
+  long val = ( ((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL ) / 4096.0f;
+  
+  switch (units) {
+    case Units::HECTOPASCAL:
+    case Units::MILLIBAR:
+      //  Sensor returns value in hPa = mbar = 0.1 kPa = 0.0145 PSI
+      break;
+    case Units::KILOPASCAL:
+      val = val * 0.1f;
+      break;
+    case Units::PSI:
+      val = val * 0.0145037738;
+      break;
+  }
+
+  return val;
 }
 
 uint32_t ReefwingLPS22HB::readPressureRAW() {
-  write(LPS22HB_CTRL_REG2, 0x01);
-
-  if (status(0x01) < 0)
-    return NO_DATA_UI;
+  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
   
-  uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
-  uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
+  uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
+  uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
 
   int32_t val = ( (pressOutH << 16) | (pressOutL << 8) | pressOutXL );
-  val=val+0x400000;
+  val = val + 0x400000;
   
   return (uint32_t)val;
 }
 
-uint32_t ReefwingLPS22HB::readPressureUI() {
-  write(LPS22HB_CTRL_REG2, 0x01);
-
-  if (status(0x1) < 0)
-    return NO_DATA_UI;
-  
-  uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
-  uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
-  uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
-  uint32_t val = ((pressOutH << 16) | (pressOutL << 8) | pressOutXL );
-  
-  return val/4096;
-}
-
 float ReefwingLPS22HB::readTemperature() {
-  write(LPS22HB_CTRL_REG2, 0x01);
-  if (status(0x02) < 0)
-    return NO_DATA_T;
+  if (_rate == RATE_ONE_SHOT) { triggerOneShot(); }
 
-  uint8_t tempOutH = read(LPS22HB_TEMP_OUT_H);
   uint8_t tempOutL = read(LPS22HB_TEMP_OUT_L);
+  uint8_t tempOutH = read(LPS22HB_TEMP_OUT_H);
   int16_t val = (tempOutH << 8) | (tempOutL & 0xff);
 
   return ((float)val)/100.0f;
-}
-
-
-uint8_t ReefwingLPS22HB::status(uint8_t status_bit) {
-  //  Check for available data at status_bit count times
-  int count = 1000;
-  uint8_t data = 0x00;
-
-  do {
-    data = read(LPS22HB_STATUS_REG);
-    --count;
-    if (count < 0)
-      break;
-  } while ((data & status_bit) == 0);
-
-  if (count < 0)
-    return -1;
-  else
-    return 0;
 }
 
 uint8_t ReefwingLPS22HB::read(uint8_t reg) {
