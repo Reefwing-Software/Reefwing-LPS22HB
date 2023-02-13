@@ -101,7 +101,8 @@ float ReefwingLPS22HB::readPressure(Units units) {
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
   uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
   
-  long val = (long)(((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL) / 4096.0f;
+  long val = ( ((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL );
+  float result = (double)val / 4096.0f;
   
   switch (units) {
     case Units::HECTOPASCAL:
@@ -109,14 +110,14 @@ float ReefwingLPS22HB::readPressure(Units units) {
       //  Sensor returns value in hPa = mbar = 0.1 kPa = 0.0145 PSI
       break;
     case Units::KILOPASCAL:
-      val = val * 0.1f;
+      result = result * 0.1f;
       break;
     case Units::PSI:
-      val = val * 0.0145037738;
+      result = result * 0.0145037738;
       break;
   }
 
-  return val;
+  return result;
 }
 
 uint32_t ReefwingLPS22HB::readPressureRAW() {
