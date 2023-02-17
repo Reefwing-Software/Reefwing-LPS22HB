@@ -175,7 +175,7 @@ uint32_t ReefwingLPS22HB::readPressureRAW() {
   return (uint32_t)val;
 }
 
-float ReefwingLPS22HB::readTemperature(Scales: scales) {
+float ReefwingLPS22HB::readTemperature(Scales scales) {
   if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
 
   uint8_t tempOutL = read(LPS22HB_TEMP_OUT_L);
@@ -184,7 +184,7 @@ float ReefwingLPS22HB::readTemperature(Scales: scales) {
 
   float result = ((float)val)/100.0f;   // In Celsius
 
-  switch (Scales){
+  switch (scales){
     case Scales::CELSIUS:
       break;
     case Scales::KELVIN:
@@ -202,12 +202,13 @@ float ReefwingLPS22HB::readAltitude(PressureReference Pr) {
   float result = 0.0f;
 
   switch(Pr) {
-    case PressureReference::QNE:
+    case PressureReference::QNE: {
       //  Reference Temp = 288.15K = 15C
       //  Tr/Lr = 44330.8
       float P = readPressure();   //  Pressure in hPa
 
       result = 44330.8f * (pow(P/STANDARD_ATMOSPHERE, ALTITUDE_EXPONENT) - 1);
+      }
       break;
     case PressureReference::QFE:
       if (firstReading.pressure > 0.0f) {
