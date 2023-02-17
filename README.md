@@ -6,7 +6,7 @@
 
  The LPS22HB has a 260 to 1260 hPa absolute pressure range, and can be sampled between 1 and 75 Hz (Output Data Rate = ODR = 1, 10, 25, 50 or 75). Within the range 800 - 1100 hPa, relative pressure accuracy is ±0.1 hPa.
 
- This library uses the barometer in one-shot mode, which is the default.
+ You can use this library in one-shot mode, which is the default, or set the acquisition data rate frequency using the `setODR(Rate: rate)` function.
 
  ```
  Note that hectopascals (hPa) and millibars (mbar) are equivalent.
@@ -59,11 +59,77 @@ The LPS22HB 8-bit `STATUS` Register, located at address 0x27 contains two bits t
 - `P_DA`: Is the Pressure Data Available bit, it is 1 when new pressure data is available and 0 otherwise.
 - `T_DA`: Is the Temperature Data Available bit, it is 1 when new temperature data is available and 0 otherwise.
 
-The status()
+For one-shot readings we can just check that the `ONE_SHOT` bit in `CTRL_REG2` (0x11) has cleared.
 
 ## Determing Altitude from Air Pressure
 
+You can't obtain an absolute height using air pressure. What you can do is get a relative height based on two different air pressures. At low altitudes, the pressure decreases by about 1.2 kPa (12 hPa) for every 100 metres gained. This decrease in air pressure with increased altitude is due to the reducing air density and weight of air above. The relationship is not linear though and weather conditions, including temperature and humidity, also affect the atmospheric pressure. Pressure is proportional to temperature and inversely proportional to humidity.
 
+The [barometric formula](https://en.wikipedia.org/wiki/Barometric_formula) is used to model how air pressure changes with altitude. The barometric formula is derived from the [ideal gas law](https://en.wikipedia.org/wiki/Ideal_gas_law). If we assume that the temperature lapse rate is zero (i.e., temperature doesn't change with altitude, which is a simplification), then the barometric formula for altitudes up to 86 kms is:
+
+```
+P = Pr exp [-gM(h - hr)  / (R * Tr) ]
+
+Where:
+
+- Pr = reference pressure
+- Tr = reference temperature (K)
+- h  = height at which pressure (P) is calculated (m)
+- hr = height of reference level b (m)
+- R  = universal gas constant: 8.3144598 J/(mol·K)
+- g  = gravitational acceleration: 9.80665 m/s^2
+- M  = molar mass of Earth's air: 0.0289644 kg/mol
+
+If we include the standard temperature lapse rate (Lr = -0.0065 [K/m]), 
+the barometeric formula becomes:
+
+P = Pr[(Tr + (h - hr)Lr) / Tr] exp [-gM / (R * Lr)]
+
+Which if we rearrange to get height is:
+
+h = hr + Tr/Lr {((P/Pr) ^ [-(R * Lr) / gM]) - 1}
+```
+
+A common simplification in sensor libraries (e.g., the official [Arduino LPS22HB Library](https://github.com/arduino-libraries/Arduino_LPS22HB/blob/master/src/BARO.cpp)) is to use the formula:
+
+```
+h = 44330 * [1 - (P/Pr) ^ (1/5.255)]
+```
+
+This formula makes a number of assumptions (Tr = 15°C, Lr = -0.0065 [K/m]) about the parameters in the equation above. Whether these assumptions are appropriate will depend on your application. Also, based on our re-arrangement of the original equation, the correct simplification should be:
+
+```
+h = 44330 * [(P/Pr) ^ (1/5.255) - 1]
+```
+
+Nevertheless, we will include Tr and Pr in our calculations, and use our form of the derived equation. The full barometric formula for height:
+
+```
+h = hr + Tr/Lr [(P/Pr) exp [-(R * Lr) / gM] - 1]
+```
+
+can be simplified by pre-calculating the constant expressions in the formula, in particular, 
+
+- hr = 0 as our height will be relative to hr.
+- The exponent can be simplified to: -(R * Lr) / gM = 0.190266435663732
+
+Then the formula becomes:
+
+```
+h = (Tr/0.0065) * [(P/Pr) ^ (0.190266) - 1]
+```
+
+## QNH, QFE, and QNE
+
+Pilots have been concerned about measuring altitude for some time, and it makes sense for us to use the commonly accepted pressure references (`Pr` in the formulas above). 
+
+The reference often used in barometer libararies is `QNE = 1013.25 hPa = 1 atm`, the standard pressure reference, standard atmosphere, or average sea-level pressure. This reference has the advantage of being a constant, but you need to remember that the altitude derived is the vertical distance between your sensor and the height where atmospheric pressure is 1013.25 hPa. In aviation this distance is referred to as a Flight Level (FL), and these are used to maintain aircraft separation above the Transition Level (which varies by location as indicated on aviation charts).
+
+Below the Transition Level, aircraft use QNH as the reference pressure. `QNH is the Pressure at Mean Sea Level (MSL)` and it varies by location. The sensor will read the altitude above mean sea level in the vicinity of the airfield from which the QNH is obtained. These standards are defined so that everyone is using the same reference pressure and thus comparable altitudes, thereby avoiding mid air collisions.
+
+The third standard reference pressure is QFE. `QFE is the pressure of a location on the ground`, normally a runway threshold. If your sensor library sets Pr = QFE, then the altitude will be zero at that location. As your sensor goes up, it will give a height Above Ground Level (AGL). Obviously terrain is not flat, so the height AGL will only be with reference to the defined location.
+
+Our library allows you to use any of the standard pressure reference standards.
 
 ## Using the Library
 

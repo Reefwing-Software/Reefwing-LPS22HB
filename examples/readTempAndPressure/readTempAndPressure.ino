@@ -10,6 +10,12 @@
 
   1.0.0 Original Release.                         11/02/23
 
+  Acquires temperature and pressure readings from the LPS22HB
+  Pressure Sensor mounted on the Arduino Nano 33 BLE Sense
+  boards Rev. 1 and 2. Altitude is calculated using the barometric
+  equation and is relative to the reference pressure passed into
+  the method.
+
   Credit - LPS22HB Absolute Digital Barometer class 
            based on work by Adrien Chapelet for IoThings.
            ref: https://github.com/adrien3d/IO_LPS22HB
@@ -40,6 +46,6 @@ void loop() {
     // Sensor Reading Loop
     Serial.print("Pressure: "); Serial.print(LPS22HB.readPressure()); Serial.print(" hPa, ");
     Serial.print("Temperature: "); Serial.print(LPS22HB.readTemperature()); Serial.print(" C, ");
-    Serial.print("Altitude: "); Serial.println(" m");
+    Serial.print("Altitude: "); Serial.print(LPS22HB.readAltitude()); Serial.println(" m");
     delay(1000);
 }

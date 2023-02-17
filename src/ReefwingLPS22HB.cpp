@@ -50,22 +50,48 @@
 
 /******************************************************************
  *
+ * Pressure Reference - See README
+ * 
+ ******************************************************************/
+
+#define STANDARD_ATMOSPHERE 1013.25   //  Average Sea-Level Pressure
+#define ALTITUDE_EXPONENT   0.190266  //  exp = -(R * Lr) / gM
+#define TEMP_LAPSE_RATE     0.0065    //  Lr = -0.0065 [K/m]
+
+/******************************************************************
+ *
  * LPS22HB Implementation - 
  * 
  ******************************************************************/
 
 ReefwingLPS22HB::ReefwingLPS22HB() : 
+  _qnhIsSet(false),
   _address(LPS22HB_ADDRESS),
   _rate((int)Rate::RATE_ONE_SHOT) { }
 
 void ReefwingLPS22HB::begin() {
   Wire1.begin();
-  write(LPS22HB_RES_CONF, 0x00);    // resolution: temp=32, pressure=128
-  write(LPS22HB_CTRL_REG1, 0x00);   // one-shot mode
+
+  //  Check that chip boot up is complete
+  while ((read(LPS22HB_CTRL_REG2) & 0x07) != 0) {
+    yield();
+  }
+
+  //  One-shot mode, LPF off, continuous update
+  write(LPS22HB_CTRL_REG1, 0x00);   
+
+  //  Save First Reading for QFE References
+  firstReading.pressure = readPressure();
+  firstReading.temperature = readTemperature(Scales::KELVIN);
 }
 
 void ReefwingLPS22HB::reset() {
-  write(LPS22HB_CTRL_REG2, 0x04);   // software reset. Self clears when reset completes
+  write(LPS22HB_CTRL_REG2, 0x04);   
+  
+  // software reset. Bit self clears when reset complete.
+  while ((read(LPS22HB_CTRL_REG2) & 0x04) != 0) {
+    yield();
+  }
 }
 
 byte ReefwingLPS22HB::whoAmI() {
@@ -85,6 +111,20 @@ void ReefwingLPS22HB::setODR(Rate rate) {
   write(LPS22HB_CTRL_REG1, (_rate & 0x07) << 4);
 }
 
+void ReefwingLPS22HB::setQNH(float q) {
+  _qnh = q;
+  _qnhIsSet = true;
+}
+
+float ReefwingLPS22HB::getQNH() {
+  return _qnh;
+}
+
+void ReefwingLPS22HB::clearQNH() {
+  _qnh = 0.0f;
+  _qnhIsSet = false;
+}
+
 void ReefwingLPS22HB::triggerOneShot() {
   write(LPS22HB_CTRL_REG2, 0x01);
 
@@ -96,7 +136,9 @@ void ReefwingLPS22HB::triggerOneShot() {
 
 float ReefwingLPS22HB::readPressure(Units units) {
   if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
-  
+
+  //  To guarantee the correct behavior of the BDU feature, 
+  //  PRESS_OUT_H (0x2A) must be the last address read.
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
   uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
@@ -133,14 +175,58 @@ uint32_t ReefwingLPS22HB::readPressureRAW() {
   return (uint32_t)val;
 }
 
-float ReefwingLPS22HB::readTemperature() {
+float ReefwingLPS22HB::readTemperature(Scales: scales) {
   if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
 
   uint8_t tempOutL = read(LPS22HB_TEMP_OUT_L);
   uint8_t tempOutH = read(LPS22HB_TEMP_OUT_H);
   int16_t val = (tempOutH << 8) | (tempOutL & 0xff);
 
-  return ((float)val)/100.0f;
+  float result = ((float)val)/100.0f;   // In Celsius
+
+  switch (Scales){
+    case Scales::CELSIUS:
+      break;
+    case Scales::KELVIN:
+      result += 273.15;
+      break;
+    case Scales::FAHRENHEIT:
+      result = result * 1.8 + 32;
+      break;
+  }
+
+  return result;
+}
+
+float ReefwingLPS22HB::readAltitude(PressureReference Pr) {
+  float result = 0.0f;
+
+  switch(Pr) {
+    case PressureReference::QNE:
+      //  Reference Temp = 288.15K = 15C
+      //  Tr/Lr = 44330.8
+      float P = readPressure();   //  Pressure in hPa
+
+      result = 44330.8f * (pow(P/STANDARD_ATMOSPHERE, ALTITUDE_EXPONENT) - 1);
+      break;
+    case PressureReference::QFE:
+      if (firstReading.pressure > 0.0f) {
+        float P = readPressure();
+
+        result = (firstReading.temperature/TEMP_LAPSE_RATE) * (pow(P/firstReading.pressure, ALTITUDE_EXPONENT) - 1);
+      }
+      break;
+    case PressureReference::QNH:
+      if (_qnhIsSet) {
+        float P = readPressure();
+        float Tr = readTemperature(Scales::KELVIN);
+
+        result = (Tr/TEMP_LAPSE_RATE) * (pow(P/_qnh, ALTITUDE_EXPONENT) - 1);
+      }
+      break;
+  }
+
+  return result;
 }
 
 uint8_t ReefwingLPS22HB::read(uint8_t reg) {

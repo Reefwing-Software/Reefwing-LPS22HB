@@ -23,7 +23,7 @@
 
 /******************************************************************
  *
- * ENUM Class Definitions - 
+ * ENUM Class & Struct Definitions - 
  * 
  ******************************************************************/
 
@@ -43,6 +43,23 @@ enum class Units {
   KILOPASCAL
 };
 
+enum class Scales {
+  CELSIUS = 0,
+  KELVIN,
+  FAHRENHEIT
+};
+
+enum class PressureReference {
+  QNE = 0,
+  QNH,
+  QFE
+};
+
+struct BaroReading {
+  float temperature;
+  float pressure;
+};
+
 /******************************************************************
  *
  * LPS22HB Class Definition - 
@@ -59,11 +76,20 @@ public:
 
   uint8_t whoAmI();
   void setODR(Rate rate);
-  float readTemperature();
+  void setQNH(float q);
+  float getQNH();
+  void clearQNH();
+  float readTemperature(Scales scales = Scales::CELSIUS);
   float readPressure(Units units = Units::HECTOPASCAL);
+  float readAltitude(PressureReference Pr = PressureReference::QNE);
   uint32_t readPressureRAW();
 
+  BaroReading firstReading;
+  BaroReading lastReading;
+
 private:
+  float _qnh;
+  bool _qnhIsSet;
   uint8_t _rate;
   uint8_t _address;
   uint8_t read(uint8_t reg);
