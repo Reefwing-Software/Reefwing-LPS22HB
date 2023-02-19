@@ -5,10 +5,10 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.0
+  Version:     1.0.1
   Date:        11/02/23
 
-  1.0.0 Original Release.                         11/02/23
+  1.0.1 Original Release.                         11/02/23
 
   Credit - LPS22HB Absolute Digital Barometer class 
            based on work by Adrien Chapelet for IoThings.

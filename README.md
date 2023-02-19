@@ -2,7 +2,9 @@
 
 # Reefwing LPS22HB
  
- This is an Arduino Library for the LPS22HB Pressure Sensor, found in the Nano 33 BLE Sense Revisions 1 and 2. The LPS22HB is a compact piezoresistive absolute pressure sensor which functions as a digital barometer. The device comprises a sensing element and an interface which communicates using I2C or SPI. The Nano 33 BLE Sense is connected via I2C on Wire 1, and is factory calibrated.
+ This is a Library for the LPS22HB Pressure Sensor, found in the Arduino Nano 33 BLE Sense Revisions 1 and 2. This library differs from the ArduinoLPS22HB library by providing altitude calculations for QNE, QNH and QFE pressure references. It also enables Block Data Update (`BDU`) which ensures that the content of the output registers is not updated until the last register is read, avoiding the reading of values related to different samples. This is important if you set the sampling rate (ODR) to anything other than one-shot.
+ 
+ The LPS22HB is a compact piezoresistive absolute pressure sensor which functions as a digital barometer. The device comprises a sensing element and an interface which communicates using I2C or SPI. The Nano 33 BLE Sense is connected via I2C on Wire 1, and is factory calibrated.
 
  The LPS22HB has a 260 to 1260 hPa absolute pressure range, and can be sampled at between 1 and 75 Hz (Output Data Rate = ODR = 1, 10, 25, 50 or 75). Within the range 800 - 1100 hPa, the relative pressure accuracy is ±0.1 hPa.
 
@@ -51,7 +53,7 @@ Most chips include a register which we can read to positively identify the devic
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | 1 | 0 | 1 | 1 | 0 | 0 | 0 | 1 |
 
-We have a function which reads the `WHO_AM_I` register and connected() which confirms that the value in the register = `LPS22HB_WHO_AM_I_VALUE` = `0xB1`.
+We have a function which reads the `WHO_AM_I` register and `connected()` which confirms that the value in the register = `LPS22HB_WHO_AM_I_VALUE` = `0xB1`.
 
 ```c++
 byte ReefwingLPS22HB::whoAmI() {
@@ -120,8 +122,8 @@ The LPS22HB has 32 slots of 40-bit FIFO data to store the pressure and temperatu
 
 ## Interpreting Pressure Readings
 
-The pressure data is stored in 3 registers: `PRESS_OUT_H` (2Ah), `PRESS_OUT_L` (29h),
-and `PRESS_OUT_XL` (28h). The value is expressed as a 2’s complement. To obtain the pressure in hPa, take the two’s complement of the complete word and then divide by 4096 LSB/hPa.
+The pressure data is stored in 3 registers: `PRESS_OUT_H` (0x2A), `PRESS_OUT_L` (0x29),
+and `PRESS_OUT_XL` (0x28). The value is expressed as a 2’s complement. To obtain the pressure in hPa, take the two’s complement of the complete word and then divide by 4096 LSB/hPa.
 
 ```c++
     uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);

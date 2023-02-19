@@ -5,10 +5,10 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.0
+  Version:     1.0.1
   Date:        11/02/23
 
-  1.0.0 Original Release.                         11/02/23
+  1.0.1 Original Release.                         11/02/23
 
   Acquires temperature and pressure readings from the LPS22HB
   Pressure Sensor mounted on the Arduino Nano 33 BLE Sense
