@@ -33,13 +33,16 @@ enum class Rate {
   RATE_10_HZ,
   RATE_25_HZ,
   RATE_50_HZ,
-  RATE_75_HZ,
+  RATE_75_HZ
 };
 
 enum class Units {
   HECTOPASCAL = 0,
   PSI,
   MILLIBAR,
+  ATMOSPHERES,
+  MM_HG,
+  IN_HG,
   KILOPASCAL
 };
 

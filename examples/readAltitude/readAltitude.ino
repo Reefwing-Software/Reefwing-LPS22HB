@@ -16,10 +16,38 @@
   equation and is relative to the reference pressure passed into
   the method.
 
-  Credit - LPS22HB Absolute Digital Barometer class 
-           based on work by Adrien Chapelet for IoThings.
-           ref: https://github.com/adrien3d/IO_LPS22HB
+  For the QNH altitude you will need to obtain the latest value,
+  and insert it in the setQNH() method.
+  In Australia, QNH can be found on the BOM website:
+  http://www.bom.gov.au/aviation/forecasts/area-qnh/
 
 ******************************************************************/
 
+#include <ReefwingLPS22HB.h>
 
+ReefwingLPS22HB LPS22HB;
+
+void setup() {
+    LPS22HB.begin();
+
+    //  Start Serial and wait for connection
+    Serial.begin(115200);
+    while (!Serial);
+
+    if (LPS22HB.connected()) {
+        Serial.println("LPS22HB Pressure Sensor found.");
+        LPS22HB.setQNH(1017.0f);      //  INSERT CURRENT QNH FOR YOUR AREA
+    }
+    else {
+        Serial.println("LPS22HB Pressure Sensor not found.");
+        while (true) {  }   // loop forever
+    }
+}
+
+void loop() {
+    // Sensor Reading Loop
+    Serial.print("QNE Altitude: "); Serial.print(LPS22HB.readAltitude()); Serial.print(" m,    ");
+    Serial.print("QFE Altitude: "); Serial.print(LPS22HB.readAltitude(PressureReference::QFE)); Serial.print(" m,    ");
+    Serial.print("QNH Altitude: "); Serial.print(LPS22HB.readAltitude(PressureReference::QNH)); Serial.println(" m.");
+    delay(1000);
+}

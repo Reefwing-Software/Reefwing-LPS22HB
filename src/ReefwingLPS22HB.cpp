@@ -57,6 +57,8 @@
 #define STANDARD_ATMOSPHERE 1013.25   //  Average Sea-Level Pressure
 #define ALTITUDE_EXPONENT   0.190266  //  exp = -(R * Lr) / gM
 #define TEMP_LAPSE_RATE     0.0065    //  Lr = -0.0065 [K/m]
+#define HPA_TO_MMHG         0.750062  //  Convert hPa to mmHg
+#define HPA_TO_INHG         0.029530  //  Convert hPa to inHg
 
 /******************************************************************
  *
@@ -77,8 +79,8 @@ void ReefwingLPS22HB::begin() {
     yield();
   }
 
-  //  One-shot mode, LPF off, continuous update
-  write(LPS22HB_CTRL_REG1, 0x00);   
+  //  One-shot mode, LPF off, and BDU on
+  write(LPS22HB_CTRL_REG1, 0x02);   
 
   //  Save First Reading for QFE References
   firstReading.pressure = readPressure();
@@ -86,7 +88,9 @@ void ReefwingLPS22HB::begin() {
 }
 
 void ReefwingLPS22HB::reset() {
-  write(LPS22HB_CTRL_REG2, 0x04);   
+  //  0x14 = 10100b, bit 4 = IF_ADD_INC, default = 1
+  //  bit 2 = SWRESET, set to reset chip
+  write(LPS22HB_CTRL_REG2, 0x14);   
   
   // software reset. Bit self clears when reset complete.
   while ((read(LPS22HB_CTRL_REG2) & 0x04) != 0) {
@@ -108,6 +112,8 @@ bool ReefwingLPS22HB::connected() {
 
 void ReefwingLPS22HB::setODR(Rate rate) {
   _rate = (int)rate;
+
+  //  Set ODR bits 4, 5 & 6
   write(LPS22HB_CTRL_REG1, (_rate & 0x07) << 4);
 }
 
@@ -157,6 +163,14 @@ float ReefwingLPS22HB::readPressure(Units units) {
     case Units::PSI:
       result = result * 0.0145037738;
       break;
+    case Units::ATMOSPHERES:
+      result = result / STANDARD_ATMOSPHERE;
+      break;
+    case Units::MM_HG:
+      result = result * HPA_TO_MMHG;
+      break;
+    case Units::IN_HG:
+      result = result * HPA_TO_INHG;
   }
 
   return result;

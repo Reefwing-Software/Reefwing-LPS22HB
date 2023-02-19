@@ -16,9 +16,11 @@
   equation and is relative to the reference pressure passed into
   the method.
 
-  Credit - LPS22HB Absolute Digital Barometer class 
-           based on work by Adrien Chapelet for IoThings.
-           ref: https://github.com/adrien3d/IO_LPS22HB
+  This example uses the defaults for readPressure(), readTemperature(),
+  and readAltitude(). These are respectively, pressure Units = hPa/mbar, 
+  temperature Scales = Celcius and Pressure Reference = QNE = 1013.25 hPa = 1 atm. 
+  
+  See README for additional detail.
 
 ******************************************************************/
 
