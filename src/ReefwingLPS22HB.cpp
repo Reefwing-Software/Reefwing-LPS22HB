@@ -5,13 +5,14 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.1
-  Date:        11/02/23
+  Version:     1.0.2
+  Date:        20/02/23
 
   1.0.1 Original Release.                         11/02/23
+  1.0.2 Added 2's comp for temperature            20/02/23
 
-  Credit - LPS22HB Absolute Digital Barometer class 
-           based on work by Adrien Chapelet for IoThings.
+  Credit - Some code used from the LPS22HB Absolute Digital Barometer 
+           class  by Adrien Chapelet for IoThings.
            ref: https://github.com/adrien3d/IO_LPS22HB
 
 ******************************************************************/
@@ -79,7 +80,7 @@ void ReefwingLPS22HB::begin() {
     yield();
   }
 
-  //  One-shot mode, LPF off, and BDU on
+  //  power-down mode, LPF off, and BDU on
   write(LPS22HB_CTRL_REG1, 0x02);   
 
   //  Save First Reading for QFE References
@@ -88,9 +89,8 @@ void ReefwingLPS22HB::begin() {
 }
 
 void ReefwingLPS22HB::reset() {
-  //  0x14 = 10100b, bit 4 = IF_ADD_INC, default = 1
-  //  bit 2 = SWRESET, set to reset chip
-  write(LPS22HB_CTRL_REG2, 0x14);   
+  //  0x04 = 0100b, bit 2 = SWRESET, set to reset chip
+  write(LPS22HB_CTRL_REG2, 0x04);   
   
   // software reset. Bit self clears when reset complete.
   while ((read(LPS22HB_CTRL_REG2) & 0x04) != 0) {
@@ -111,10 +111,10 @@ bool ReefwingLPS22HB::connected() {
 }
 
 void ReefwingLPS22HB::setODR(Rate rate) {
-  _rate = (int)rate;
+  _rate = (uint8_t)rate;
 
-  //  Set ODR bits 4, 5 & 6
-  write(LPS22HB_CTRL_REG1, (_rate & 0x07) << 4);
+  //  Set ODR bits 4, 5 & 6 (_rate & 0x07) << 4 and BDU 0x02
+  write(LPS22HB_CTRL_REG1, ((_rate & 0x07) << 4) & 0x02);
 }
 
 void ReefwingLPS22HB::setQNH(float q) {
@@ -141,7 +141,7 @@ void ReefwingLPS22HB::triggerOneShot() {
 }
 
 float ReefwingLPS22HB::readPressure(Units units) {
-  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
+  if (_rate == (uint8_t)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
 
   //  To guarantee the correct behavior of the BDU feature, 
   //  PRESS_OUT_H (0x2A) must be the last address read.
@@ -176,25 +176,43 @@ float ReefwingLPS22HB::readPressure(Units units) {
   return result;
 }
 
-uint32_t ReefwingLPS22HB::readPressureRAW() {
-  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
+int16_t ReefwingLPS22HB::twosCompToInteger(uint16_t two_compliment_val) {
+    // [0x0000; 0x7FFF] corresponds to [0; 32,767]
+    // [0x8000; 0xFFFF] corresponds to [-32,768; -1]
+    // int16_t has the range [-32,768; 32,767]
+
+    uint16_t sign_mask = 0x8000;
+
+    if ( (two_compliment_val & sign_mask) == 0 ) {
+      // if positive
+      return two_compliment_val;
+    } 
+    else {
+      //  if negative invert all bits, add one, and add sign
+      return -(~two_compliment_val + 1);
+    }
+}
+
+uint32_t ReefwingLPS22HB::readPressureCount() {
+  if (_rate == (uint8_t)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
   
   uint8_t pressOutXL = read(LPS22HB_PRES_OUT_XL);
   uint8_t pressOutL = read(LPS22HB_PRES_OUT_L);
   uint8_t pressOutH = read(LPS22HB_PRES_OUT_H);
 
-  int32_t val = ( (pressOutH << 16) | (pressOutL << 8) | pressOutXL );
-  val = val + 0x400000;
+  long val = ( ((long)pressOutH << 16) | ((long)pressOutL << 8) | (long)pressOutXL );
   
   return (uint32_t)val;
 }
 
 float ReefwingLPS22HB::readTemperature(Scales scales) {
-  if (_rate == (int)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
+  if (_rate == (uint8_t)Rate::RATE_ONE_SHOT) { triggerOneShot(); }
 
   uint8_t tempOutL = read(LPS22HB_TEMP_OUT_L);
   uint8_t tempOutH = read(LPS22HB_TEMP_OUT_H);
-  int16_t val = (tempOutH << 8) | (tempOutL & 0xff);
+
+  uint16_t count = (tempOutH << 8) | (tempOutL & 0xff); 
+  int16_t val = twosCompToInteger(count);
 
   float result = ((float)val)/100.0f;   // In Celsius
 
@@ -243,6 +261,8 @@ float ReefwingLPS22HB::readAltitude(PressureReference Pr) {
 
   return result;
 }
+
+//  I2C read and write byte
 
 uint8_t ReefwingLPS22HB::read(uint8_t reg) {
   Wire1.beginTransmission(_address);

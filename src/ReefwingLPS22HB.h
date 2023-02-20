@@ -5,13 +5,14 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.1
-  Date:        11/02/23
+  Version:     1.0.2
+  Date:        20/02/23
 
   1.0.1 Original Release.                         11/02/23
+  1.0.2 Added 2's comp for temperature            20/02/23
 
-  Credit - LPS22HB Absolute Digital Barometer class 
-           based on work by Adrien Chapelet for IoThings.
+  Credit - Some code used from the LPS22HB Absolute Digital Barometer 
+           class  by Adrien Chapelet for IoThings.
            ref: https://github.com/adrien3d/IO_LPS22HB
 
 ******************************************************************/
@@ -82,10 +83,11 @@ public:
   void setQNH(float q);
   float getQNH();
   void clearQNH();
+  int16_t twosCompToInteger(uint16_t two_compliment_val);
   float readTemperature(Scales scales = Scales::CELSIUS);
   float readPressure(Units units = Units::HECTOPASCAL);
   float readAltitude(PressureReference Pr = PressureReference::QNE);
-  uint32_t readPressureRAW();
+  uint32_t readPressureCount();
 
   BaroReading firstReading;
   BaroReading lastReading;
