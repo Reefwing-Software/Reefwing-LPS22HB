@@ -2,7 +2,11 @@
 
 # Reefwing LPS22HB
  
- This is a Library for the LPS22HB Pressure Sensor, found in the Arduino Nano 33 BLE Sense Revisions 1 and 2. This library differs from the ArduinoLPS22HB library by providing altitude calculations for QNE, QNH and QFE pressure references. It also enables Block Data Update (`BDU`) which ensures that the content of the output registers is not updated until the last register is read, avoiding the reading of values related to different samples. This is important if you set the sampling rate (ODR) to anything other than one-shot.
+ This is a Library for the LPS22HB Pressure Sensor, found in the Arduino Nano 33 BLE Sense Revisions 1 and 2. This library differs from the ArduinoLPS22HB library in the following ways:
+ 
+ - It provides altitude calculations for QNE, QNH and QFE pressure references. 
+ - It enables Block Data Update (`BDU`) which ensures that the content of the output registers is not updated until the last register is read, avoiding the reading of values related to different samples. This is important if you set the sampling rate (ODR) to anything other than one-shot.
+ - It includes 2's complement conversion for the temperature reading allowing negative values to be returned.
 
  For additional details, please refer to our Medium article: [Reefwing LPS22HB Library for the Nano 33 BLE Sense](https://reefwing.medium.com/reefwing-lps22hb-library-for-the-nano-33-ble-sense-44839caa34e4).
  
