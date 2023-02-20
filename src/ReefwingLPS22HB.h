@@ -5,11 +5,12 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.2
-  Date:        20/02/23
+  Version:     1.0.3
+  Date:        21/02/23
 
   1.0.1 Original Release.                         11/02/23
   1.0.2 Added 2's comp for temperature            20/02/23
+  1.0.3 Fixed setODR() bug                        21/02/23
 
   Credit - Some code used from the LPS22HB Absolute Digital Barometer 
            class  by Adrien Chapelet for IoThings.

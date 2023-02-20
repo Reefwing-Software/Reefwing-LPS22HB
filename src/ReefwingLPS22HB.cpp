@@ -5,11 +5,12 @@
   @copyright  Please see the accompanying LICENSE file.
 
   Code:        David Such
-  Version:     1.0.2
-  Date:        20/02/23
+  Version:     1.0.3
+  Date:        21/02/23
 
   1.0.1 Original Release.                         11/02/23
   1.0.2 Added 2's comp for temperature            20/02/23
+  1.0.3 Fixed setODR() bug                        21/02/23
 
   Credit - Some code used from the LPS22HB Absolute Digital Barometer 
            class  by Adrien Chapelet for IoThings.
@@ -114,7 +115,7 @@ void ReefwingLPS22HB::setODR(Rate rate) {
   _rate = (uint8_t)rate;
 
   //  Set ODR bits 4, 5 & 6 (_rate & 0x07) << 4 and BDU 0x02
-  write(LPS22HB_CTRL_REG1, ((_rate & 0x07) << 4) & 0x02);
+  write(LPS22HB_CTRL_REG1, ((_rate & 0x07) << 4) | 0x02);
 }
 
 void ReefwingLPS22HB::setQNH(float q) {
@@ -184,7 +185,7 @@ int16_t ReefwingLPS22HB::twosCompToInteger(uint16_t two_compliment_val) {
     uint16_t sign_mask = 0x8000;
 
     if ( (two_compliment_val & sign_mask) == 0 ) {
-      // if positive
+      // positive number - do nothing
       return two_compliment_val;
     } 
     else {
